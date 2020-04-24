@@ -12,14 +12,13 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+	cferr "github.com/cloudflare/cfssl/errors"
+	"github.com/cloudflare/cfssl/helpers"
+	"github.com/cloudflare/cfssl/log"
 	"net"
 	"net/mail"
 	"net/url"
 	"strings"
-
-	cferr "github.com/cloudflare/cfssl/errors"
-	"github.com/cloudflare/cfssl/helpers"
-	"github.com/cloudflare/cfssl/log"
 )
 
 const (
@@ -132,13 +131,14 @@ type CAConfig struct {
 // A CertificateRequest encapsulates the API interface to the
 // certificate request functionality.
 type CertificateRequest struct {
-	CN           string     `json:"CN" yaml:"CN"`
-	Names        []Name     `json:"names" yaml:"names"`
-	Hosts        []string   `json:"hosts" yaml:"hosts"`
-	KeyRequest   *KeyRequest `json:"key,omitempty" yaml:"key,omitempty"`
-	CA           *CAConfig  `json:"ca,omitempty" yaml:"ca,omitempty"`
-	SerialNumber string     `json:"serialnumber,omitempty" yaml:"serialnumber,omitempty"`
+	CN           string           `json:"CN" yaml:"CN"`
+	Names        []Name           `json:"names" yaml:"names"`
+	Hosts        []string         `json:"hosts" yaml:"hosts"`
+	KeyRequest   *KeyRequest      `json:"key,omitempty" yaml:"key,omitempty"`
+	CA           *CAConfig        `json:"ca,omitempty" yaml:"ca,omitempty"`
+	SerialNumber string           `json:"serialnumber,omitempty" yaml:"serialnumber,omitempty"`
 	Extensions   []pkix.Extension `json:"extensions,omitempty" yaml:"extensions,omitempty"`
+	ExpiryString string           `json:"expiry,omitempty"`
 }
 
 // New returns a new, empty CertificateRequest with a
@@ -430,12 +430,12 @@ func appendCAInfoToCSR(reqConf *CAConfig, csr *x509.CertificateRequest) error {
 	}
 
 	csr.ExtraExtensions = append(csr.ExtraExtensions, pkix.Extension{
-			Id:       asn1.ObjectIdentifier{2, 5, 29, 19},			
-			Value:    val,
-			Critical: true,		
-		})
+		Id:       asn1.ObjectIdentifier{2, 5, 29, 19},
+		Value:    val,
+		Critical: true,
+	})
 
-		return nil
+	return nil
 }
 
 // appendCAInfoToCSR appends user-defined extension to a CSR

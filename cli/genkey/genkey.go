@@ -4,7 +4,6 @@ package genkey
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/cloudflare/cfssl/cli"
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/initca"

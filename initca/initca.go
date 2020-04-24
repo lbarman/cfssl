@@ -71,6 +71,7 @@ func New(req *csr.CertificateRequest) (cert, csrPEM, key []byte, err error) {
 
 	g := &csr.Generator{Validator: validator}
 	csrPEM, key, err = g.ProcessRequest(req)
+
 	if err != nil {
 		log.Errorf("failed to process request: %v", err)
 		key = nil
@@ -90,6 +91,25 @@ func New(req *csr.CertificateRequest) (cert, csrPEM, key []byte, err error) {
 	}
 
 	signReq := signer.SignRequest{Hosts: req.Hosts, Request: string(csrPEM)}
+
+	if req.ExpiryString != "" {
+		var expiry time.Duration
+		if expiry, err = time.ParseDuration(req.ExpiryString); err != nil {
+			log.Errorf("failed to parse duration: %v", err)
+			return
+		}
+
+		backdate := -5 * time.Minute
+		if backdateProfile := s.Policy().Default.Backdate; backdateProfile != 0 {
+			backdate = -1 * backdateProfile
+		}
+		notBefore := time.Now().Round(time.Minute).Add(backdate)
+		notAfter := notBefore.Add(expiry)
+
+		signReq.NotBefore = notBefore.UTC()
+		signReq.NotAfter = notAfter.UTC()
+	}
+
 	cert, err = s.Sign(signReq)
 
 	return
