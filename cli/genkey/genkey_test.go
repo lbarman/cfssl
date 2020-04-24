@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"testing"
 
@@ -38,6 +39,8 @@ func checkResponse(out []byte) error {
 	if err := json.Unmarshal(out, &response); err != nil {
 		return err
 	}
+
+	log.Printf("%+v\n", response)
 
 	if response["key"] == nil {
 		return errors.New("no key is outputted")
@@ -80,4 +83,24 @@ func TestGenkey(t *testing.T) {
 	if err := checkResponse(out); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestGenkeyWithExpiry(t *testing.T) {
+	var pipe *stdoutRedirect
+	var out []byte
+	var err error
+
+	if pipe, err = newStdoutRedirect(); err != nil {
+		t.Fatal(err)
+	}
+	if err := genkeyMain([]string{"testdata/csr-with-expiry.json"}, cli.Config{}); err != nil {
+		t.Fatal(err)
+	}
+	if out, err = pipe.readAll(); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkResponse(out); err != nil {
+		t.Fatal(err)
+	}
+
 }
