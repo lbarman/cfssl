@@ -3,6 +3,8 @@ package genkey
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/cloudflare/cfssl/certinfo"
 	"io/ioutil"
 	"log"
 	"os"
@@ -34,23 +36,23 @@ func (pipe *stdoutRedirect) readAll() ([]byte, error) {
 	return ioutil.ReadAll(pipe.r)
 }
 
-func checkResponse(out []byte) error {
+func checkResponse(out []byte) (error, map[string]interface{}) {
 	var response map[string]interface{}
 	if err := json.Unmarshal(out, &response); err != nil {
-		return err
+		return err, nil
 	}
 
 	log.Printf("%+v\n", response)
 
 	if response["key"] == nil {
-		return errors.New("no key is outputted")
+		return errors.New("no key is outputted"), nil
 	}
 
 	if response["csr"] == nil {
-		return errors.New("no csr is outputted")
+		return errors.New("no csr is outputted"), nil
 	}
 
-	return nil
+	return nil, response
 }
 
 func TestGenkey(t *testing.T) {
@@ -67,7 +69,7 @@ func TestGenkey(t *testing.T) {
 	if out, err = pipe.readAll(); err != nil {
 		t.Fatal(err)
 	}
-	if err := checkResponse(out); err != nil {
+	if err, _ := checkResponse(out); err != nil {
 		t.Fatal(err)
 	}
 
@@ -80,7 +82,7 @@ func TestGenkey(t *testing.T) {
 	if out, err = pipe.readAll(); err != nil {
 		t.Fatal(err)
 	}
-	if err := checkResponse(out); err != nil {
+	if err, _ := checkResponse(out); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -99,8 +101,30 @@ func TestGenkeyWithExpiry(t *testing.T) {
 	if out, err = pipe.readAll(); err != nil {
 		t.Fatal(err)
 	}
-	if err := checkResponse(out); err != nil {
+	err, response := checkResponse(out)
+	if err != nil {
 		t.Fatal(err)
 	}
 
+	cert := (response["csr"]).(string)
+
+	certParsed, err := certinfo.ParseCertificatePEM([]byte(cert))
+
+	fmt.Printf("%+v\n", cert)
+	fmt.Printf("%+v\n", certParsed)
+
+	if err != nil {
+		t.Fatal("Couldn't parse the produced cert", err)
+	}
+
+
+	/*
+	HoursInAYear := float64(8766) // 365.25 * 24
+	expiryHoursInConfig := c.CFG.Signing.Default.Expiry.Hours()
+	expiryYearsInConfig := int(math.Ceil(expiryHoursInConfig / HoursInAYear))
+	certExpiryInYears := certParsed.NotAfter.Year() - time.Now().Year()
+
+	if certExpiryInYears != expiryYearsInConfig {
+		t.Fatal("Expiry specified in Config file is", expiryYearsInConfig, "but cert has expiry", certExpiryInYears)
+	}*/
 }
