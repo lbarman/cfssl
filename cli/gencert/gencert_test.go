@@ -2,11 +2,10 @@ package gencert
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"github.com/cloudflare/cfssl/certinfo"
 	"github.com/cloudflare/cfssl/config"
 	"io/ioutil"
-	"errors"
 	"math"
 	"os"
 	"testing"
@@ -309,8 +308,6 @@ func TestGencertMainWithConfigLoading(t *testing.T) {
 	if err != nil {
 		t.Fatal("Couldn't parse the produced cert", err)
 	}
-
-	fmt.Println(parsedCert)
 
 	HoursInAYear := float64(8766) // 365.25 * 24
 	expiryHoursInConfig := c.CFG.Signing.Default.Expiry.Hours()
